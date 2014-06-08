@@ -8,6 +8,7 @@
 #
 #	2014/6/7	Added conditionals to carry out actions only if needed. Added root permission check.
 #	2014/6/7	Reformatted progress messages.
+#	2014/6/7	Added null redirects [no push].
 #
 
 # please end it with "/"
@@ -47,11 +48,11 @@ else
 	echo "*** Group '${BU_GROUP}' already exists..."
 fi
 
-grep '^Subsystem sftp internal-sftp' /etc/ssh/sshd_config
+grep '^Subsystem sftp internal-sftp' /etc/ssh/sshd_config >/dev/null 2>&1
 if [ $? -ne 0 ]; then
 	echo "*** Modifying sshd_config to support sftp backups..."
 	cp -a /etc/ssh/sshd_config /etc/ssh/sshd_conf.orig.bu
-	sed -i -e 's/Subsystem sftp .*$/Subsystem sftp internal-sftp/' /etc/ssh/sshd_config
+	sed -i -e 's/Subsystem sftp .*$/Subsystem sftp internal-sftp/' /etc/ssh/sshd_config >/dev/null 2>&1
 	echo "Match group ${BU_GROUP}" >> /etc/ssh/sshd_config
 	echo "ChrootDirectory ${BU_BASE}" >> /etc/ssh/sshd_config
 	echo "X11Forwarding no" >> /etc/ssh/sshd_config

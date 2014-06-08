@@ -8,6 +8,7 @@
 #
 #	2014/6/7	Added conditionals to carry out actions only if needed. Added root permission check.
 #	2014/6/7	Fixed a typo causing an error with variables ('{$'->'${'). Reformatted progress messages.
+#	2014/6/7	Added null redirects. Quoted some directory paths. Made created users --disable-login
 #
 
 BU_USER="$1"
@@ -50,7 +51,11 @@ id -u  ${BU_USER_PREFIX}${BU_USER} >/dev/null 2>&1
 if [ ! $? -eq 0 ]; then
 	echo "*** Adding user '${BU_USER_PREFIX}${BU_USER}'..."
 	# -d homedir, -g groupid, -N (no create group), -M (no create homedir)
-	useradd ${BU_USER_PREFIX}${BU_USER} -d /${BU_USER} -g ${BU_GROUP} -N -M
+	useradd ${BU_USER_PREFIX}${BU_USER} -d /${BU_USER} -g ${BU_GROUP} -N -M --disable-login >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo "ERROR: Unable to create user '${BU_USER_PREFIX}${BU_USER}'! Aborting!!!"
+		exit 10
+	fi
 else
 	echo "ERROR: User '${BU_USER_PREFIX}${BU_USER}' already exists! Aborting!!!"
 	exit 4
@@ -76,8 +81,13 @@ if [ -d "${BU_BASE}${BU_USER}" ]; then
 else
 	echo "*** Creating backup directory '${BU_BASE}${BU_USER}'..."
 	mkdir "${BU_BASE}${BU_USER}"
+	if [ -w "${BU_BASE}${BU_USER}" ]; then
+		echo "ERROR: Unable to create directory '${BU_BASE}${BU_USER}'! Aborting!!!"
+		exit 11
+	fi
 	chown ${BU_USER_PREFIX}${BU_USER}:${BU_GROUP} ${BU_BASE}${BU_USER}
-	chmod o-rwx ${BU_BASE}${BU_USER}
+	chmod o-rwx "${BU_BASE}${BU_USER}"
+	chmod g-w "${BU_BASE}${BU_USER}"
 fi
 
 if [ ! -d "${BU_BASE}${BU_USER}/.ssh" ]; then
