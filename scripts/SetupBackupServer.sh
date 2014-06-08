@@ -6,7 +6,8 @@
 
 #	You should only have to run this once
 #
-#	2014/6/7	Added conditionals to carry out actions only if needed. Added root permision check.
+#	2014/6/7	Added conditionals to carry out actions only if needed. Added root permission check.
+#	2014/6/7	Reformatted progress messages.
 #
 
 # please end it with "/"
@@ -22,27 +23,33 @@ if [ "$(id -u)" -ne "$ROOTUID" ] ; then
     exit 1
 fi
 
+echo ""
+echo "Setting up this server to receive backups by sftp."
+echo "Defaults:"
+echo "    Group: ${BU_GROUP}     User Prefix: ${BU_USER_PREFIX}"
+echo "    Base: ${BU_BASE}"
+echo ""
 
 if [ ! -r "${BU_BASE}" ]; then
-	echo "Adding base directory '${BU_BASE}'..."
+	echo "*** Adding base directory '${BU_BASE}'..."
 	mkdir "${BU_BASE}"
 	chown root:root "${BU_BASE}"
 	chmod 755 "$BU_BASE"
 else
-	echo "Base directory '${BU_BASE}' already exists..."
+	echo "*** Base directory '${BU_BASE}' already exists..."
 fi
 
 getent group ${BU_GROUP} >/dev/null 2>&1
 if [ $? -ne 0 ]; then
-	echo "Add group '${BU_GROUP}'..."
+	echo "*** Add group '${BU_GROUP}'..."
 	addgroup ${BU_GROUP}
 else
-	echo "Group '${BU_GROUP}' already exists..."
+	echo "*** Group '${BU_GROUP}' already exists..."
 fi
 
 grep '^Subsystem sftp internal-sftp' /etc/ssh/sshd_config
 if [ $? -ne 0 ]; then
-	echo "Modifying sshd_config to support sftp backups..."
+	echo "*** Modifying sshd_config to support sftp backups..."
 	cp -a /etc/ssh/sshd_config /etc/ssh/sshd_conf.orig.bu
 	sed -i -e 's/Subsystem sftp .*$/Subsystem sftp internal-sftp/' /etc/ssh/sshd_config
 	echo "Match group ${BU_GROUP}" >> /etc/ssh/sshd_config
@@ -51,11 +58,14 @@ if [ $? -ne 0 ]; then
 	echo "AllowTcpForwarding no" >> /etc/ssh/sshd_config
 	echo "ForceCommand internal-sftp" >> /etc/ssh/sshd_config
 else
-	echo "Modifications to sshd_config seem to not be needed..."
+	echo "*** Modifications to sshd_config seem to not be needed..."
 fi
 echo ""
-
-echo "Group '${BU_GROUP}' will back up to directory '${BU_BASE}'."
+echo "********************************************************************"
+echo "Group '${BU_GROUP}' will back up to "
+echo "    directory '${BU_BASE}'."
+echo "********************************************************************"
 
 echo ""
 echo "SetupBackupServer.sh is now done."
+echo ""

@@ -6,7 +6,8 @@
 #
 #
 #
-#	2014/6/7	Added conditionals to carry out actions only if needed. Added root permision check.
+#	2014/6/7	Added conditionals to carry out actions only if needed. Added root permission check.
+#	2014/6/7	Fixed a typo causing an error with variables ('{$'->'${'). Reformatted progress messages.
 #
 
 BU_USER="$1"
@@ -38,9 +39,16 @@ if [ ! -r "${BU_BASE}" ]; then
 	exit 3
 fi
 
+echo ""
+echo "Configuring backups for '${BU_USER}' (${KEY_COMMENT})."
+echo "Defaults:"
+echo "    Group: ${BU_GROUP}     User Prefix: ${BU_USER_PREFIX}"
+echo "    Base: ${BU_BASE}"
+echo ""
+
 id -u  ${BU_USER_PREFIX}${BU_USER} >/dev/null 2>&1
 if [ ! $? -eq 0 ]; then
-	echo "Adding user '${BU_USER_PREFIX}${BU_USER}'..."
+	echo "*** Adding user '${BU_USER_PREFIX}${BU_USER}'..."
 	# -d homedir, -g groupid, -N (no create group), -M (no create homedir)
 	useradd ${BU_USER_PREFIX}${BU_USER} -d /${BU_USER} -g ${BU_GROUP} -N -M
 else
@@ -66,62 +74,66 @@ if [ -d "${BU_BASE}${BU_USER}" ]; then
 		exit 6
 	fi
 else
-	echo "Creating backup directory '${BU_BASE}${BU_USER}'..."
+	echo "*** Creating backup directory '${BU_BASE}${BU_USER}'..."
 	mkdir "${BU_BASE}${BU_USER}"
 	chown ${BU_USER_PREFIX}${BU_USER}:${BU_GROUP} ${BU_BASE}${BU_USER}
 	chmod o-rwx ${BU_BASE}${BU_USER}
 fi
 
-if [ ! -d "${BU_BASE}{$BU_USER}/.ssh" ]; then
-	echo "SSH credentials directory doesn't exist. Creating..."
-	mkdir "${BU_BASE}{$BU_USER}/.ssh"
+if [ ! -d "${BU_BASE}${BU_USER}/.ssh" ]; then
+	echo "*** SSH credentials directory doesn't exist. Creating..."
+	mkdir "${BU_BASE}${BU_USER}/.ssh"
 fi
 
-if [ -d "${BU_BASE}{$BU_USER}/.ssh" ]; then
-	echo "Enforcing ownership and permissions of SSH credentials directory..."
-	chown ${BU_USER_PREFIX}${BU_USER} "${BU_BASE}{$BU_USER}/.ssh"
-	chmod 600 "${BU_BASE}{$BU_USER}/.ssh"
+if [ -d "${BU_BASE}${BU_USER}/.ssh" ]; then
+	echo "*** Enforcing ownership and permissions of SSH credentials directory..."
+	chown ${BU_USER_PREFIX}${BU_USER} "${BU_BASE}${BU_USER}/.ssh"
+	chmod 600 "${BU_BASE}${BU_USER}/.ssh"
 else
 	echo "ERROR: SSH credentials folder doesn't exist, even after trying to create it! Aborting!!!"
 	exit 7
 fi
 
-if [ ! -w "${BU_BASE}{$BU_USER}/.ssh" ]; then
+if [ ! -w "${BU_BASE}${BU_USER}/.ssh" ]; then
 	echo "WARNING: No write access to credentials directory. Temporarily fixing..."
-	chown root "${BU_BASE}{$BU_USER}/.ssh"
-	chmod 600 "${BU_BASE}{$BU_USER}/.ssh"
+	chown root "${BU_BASE}${BU_USER}/.ssh"
+	chmod 600 "${BU_BASE}${BU_USER}/.ssh"
 fi
 
-if [ -w "${BU_BASE}{$BU_USER}/.ssh" ]; then
+if [ -w "${BU_BASE}${BU_USER}/.ssh" ]; then
 	if [ -z "${KEY_PASSWORD}" ]; then
 		echo "WARNING: No password specified (argument #3 to this script) for SSH key!"
 		echo "    Key will not be password protected! Proceeding after delay..."
 		sleep 2
 	fi
-	echo "Generating RSA key..."
-	ssh-keygen -t rsa -C "$KEY_COMMENT" -N "${KEY_PASSWORD}" -f "${BU_BASE}{$BU_USER}/.ssh/backup_rsa"
+	echo "*** Generating RSA key..."
+	ssh-keygen -t rsa -C "$KEY_COMMENT" -N "${KEY_PASSWORD}" -f "${BU_BASE}${BU_USER}/.ssh/backup_rsa"
 else
 	echo "ERROR: Unable to write to SSH credentials directory! Aborting!!!"
 	exit 8
 fi
 
-if [ -r "${BU_BASE}{$BU_USER}/.ssh/backup_rsa" ]; then
-	echo "Reading RSA fingerprint..."
-	KEY_FINGERPRINT=$(ssh-keygen -l -f "${BU_BASE}{$BU_USER}/.ssh/backup_rsa")
-	echo "Enforcing ownerships and permissions on SSH credentials directory..."
-	chmod -R 600 "${BU_BASE}{$BU_USER}/.ssh"
-	chown -R ${BU_USER_PREFIX}${BU_USER} "${BU_BASE}{$BU_USER}/.ssh"
+if [ -r "${BU_BASE}${BU_USER}/.ssh/backup_rsa" ]; then
+	echo "*** Reading RSA fingerprint..."
+	KEY_FINGERPRINT=$(ssh-keygen -l -f "${BU_BASE}${BU_USER}/.ssh/backup_rsa")
+	echo "*** Enforcing ownerships and permissions on SSH credentials directory..."
+	chmod -R 600 "${BU_BASE}${BU_USER}/.ssh"
+	chown -R ${BU_USER_PREFIX}${BU_USER} "${BU_BASE}${BU_USER}/.ssh"
 else
 	echo "ERROR: Something went wrong generating the RSA key! Aborting!!!"
 	exit 9
 fi
 
-echo "Script finished for user '${BU_USER}:"
+echo ""
+echo "********************************************************************"
+echo "Configuration for user '${BU_USER}:"
 echo "    Login:  ${BU_USER_PREFIX}${BU_USER}        Group:  ${BU_GROUP}"
-echo "    Directory:  ${BU_BASE}{$BU_USER}"
+echo "    Directory:  ${BU_BASE}${BU_USER}"
 echo "    RSA fingerprint: ${KEY_FINGERPRINT}"
+echo "********************************************************************"
 echo ""
 
 # TODO: copy or email public key to user. For security reasons, maybe not.
 
-echo "Script completed for user ${BU_USER} (${BU_BASE}{$BU_USER})."
+echo "Script completed for user ${BU_USER} (${BU_BASE}${BU_USER})."
+echo ""
