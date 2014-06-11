@@ -8,7 +8,7 @@
 #
 #	2014/6/7	Added conditionals to carry out actions only if needed. Added root permission check.
 #	2014/6/7	Reformatted progress messages.
-#	2014/6/7	Added null redirects [no push].
+#	2014/6/7	Added null redirects.
 #
 
 # please end it with "/"

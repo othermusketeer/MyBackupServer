@@ -9,6 +9,7 @@
 #	2014/6/7	Added conditionals to carry out actions only if needed. Added root permission check.
 #	2014/6/7	Fixed a typo causing an error with variables ('{$'->'${'). Reformatted progress messages.
 #	2014/6/7	Added null redirects. Quoted some directory paths. Made created users --disable-login
+#	2014/6/8	Fixed user creation. Had conflated options for useradd and adduser. Write check missing NOT.
 #
 
 BU_USER="$1"
@@ -50,8 +51,7 @@ echo ""
 id -u  ${BU_USER_PREFIX}${BU_USER} >/dev/null 2>&1
 if [ ! $? -eq 0 ]; then
 	echo "*** Adding user '${BU_USER_PREFIX}${BU_USER}'..."
-	# -d homedir, -g groupid, -N (no create group), -M (no create homedir)
-	useradd ${BU_USER_PREFIX}${BU_USER} -d /${BU_USER} -g ${BU_GROUP} -N -M --disable-login >/dev/null 2>&1
+	useradd -c "${BU_USER} Backup" -d /${BU_USER} -g ${BU_GROUP} -M -N -s /bin/false ${BU_USER_PREFIX}${BU_USER}
 	if [ $? -ne 0 ]; then
 		echo "ERROR: Unable to create user '${BU_USER_PREFIX}${BU_USER}'! Aborting!!!"
 		exit 10
@@ -81,7 +81,7 @@ if [ -d "${BU_BASE}${BU_USER}" ]; then
 else
 	echo "*** Creating backup directory '${BU_BASE}${BU_USER}'..."
 	mkdir "${BU_BASE}${BU_USER}"
-	if [ -w "${BU_BASE}${BU_USER}" ]; then
+	if [ ! -w "${BU_BASE}${BU_USER}" ]; then
 		echo "ERROR: Unable to create directory '${BU_BASE}${BU_USER}'! Aborting!!!"
 		exit 11
 	fi
@@ -117,7 +117,7 @@ if [ -w "${BU_BASE}${BU_USER}/.ssh" ]; then
 		sleep 2
 	fi
 	echo "*** Generating RSA key..."
-	ssh-keygen -t rsa -C "$KEY_COMMENT" -N "${KEY_PASSWORD}" -f "${BU_BASE}${BU_USER}/.ssh/backup_rsa"
+	ssh-keygen -q -t rsa -C "$KEY_COMMENT" -N "${KEY_PASSWORD}" -f "${BU_BASE}${BU_USER}/.ssh/backup_rsa"
 else
 	echo "ERROR: Unable to write to SSH credentials directory! Aborting!!!"
 	exit 8
